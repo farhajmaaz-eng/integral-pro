@@ -1,0 +1,12 @@
+node_modules
+dist
+data
+.git
+.gitignore
+screenshots
+test-results
+playwright-report
+*.log
+.env
+.env.local
+README.md

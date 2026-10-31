@@ -1,0 +1,16 @@
+services:
+  integral:
+    build: .
+    container_name: integral-pro
+    ports:
+      - "8787:8787"
+    environment:
+      # Set a strong value before exposing this to a network you do not control.
+      ACCESS_TOKEN: ${ACCESS_TOKEN:-}
+      PORT: 8787
+    volumes:
+      - integral-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  integral-data:

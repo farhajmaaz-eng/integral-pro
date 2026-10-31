@@ -1,0 +1,9 @@
+{
+  "name": "focus-ledger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A tiny focus timer and task ledger with no build step",
+  "scripts": {
+    "start": "python3 -m http.server 4173"
+  }
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Focus Ledger</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="bar">
+        <span class="mark">FL</span>
+        <span class="title">FOCUS LEDGER</span>
+        <span class="spacer"></span>
+        <span class="clock" id="clock">00:00</span>
+      </header>
+
+      <section class="grid">
+        <div class="panel timer-panel">
+          <div class="panel-title">SESSION</div>
+          <div class="timer" id="timer">25:00</div>
+          <div class="timer-actions">
+            <button id="start">START</button>
+            <button id="reset">RESET</button>
+          </div>
+          <div class="mode-row">
+            <button class="mode active" data-minutes="25">FOCUS 25</button>
+            <button class="mode" data-minutes="5">BREAK 5</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">TASKS <span id="count">0</span></div>
+          <form id="task-form">
+            <input id="task-input" placeholder="what are you working on?" autocomplete="off" />
+            <button type="submit">ADD</button>
+          </form>
+          <ul id="tasks"></ul>
+        </div>
+      </section>
+
+      <footer class="foot">
+        <span>LOCAL STORAGE · NO ACCOUNT</span>
+        <span id="sessions">0 SESSIONS</span>
+      </footer>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
