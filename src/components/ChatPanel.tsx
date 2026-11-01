@@ -196,6 +196,13 @@ export function ChatPanel() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const stickRef = useRef(true)
 
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 180)}px`
+  }, [input])
+
   const resolved = effectiveModel(settings, chatMode, chatModel)
   const ready = providerReady(resolved?.provider)
   const activeTab = tabs.find((tab) => tab.path === activePath)

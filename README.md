@@ -21,7 +21,7 @@ It is also deliberately not another rounded-corner AI product. The interface is 
 - **Streaming responses** with tool-call cards, reasoning display, stop button and markdown rendering.
 - **Approval by default**: file writes show a diff before they land; commands show the exact command before it runs. Auto-apply is opt-in.
 - **Project-wide search** backed by SQLite FTS5. The index warms itself on boot and can be rebuilt from the UI.
-- **Real terminal** over WebSocket, backed by a PTY, with resize and reconnect handling.
+- **Real terminal** over WebSocket, backed by a PTY, with resize, reconnect handling and clipboard paste.
 - **Git panel** for branch status, the change list, file diffs, commits and history. Works with any repository the server user can access.
 - **Exports**: workspace ZIP, conversation Markdown, current-file download, and a settings JSON export/import flow that never includes API keys.
 - **Appearance controls**: five accent presets, compact density, reduced motion, editor and terminal font sizes, and word wrap. The charcoal base stays fixed.
@@ -165,7 +165,7 @@ On mobile, use the bottom bar to switch between FILES, EDIT, AGENT, TERM and GIT
 
 ## Mobile
 
-The layout switches at 900px. The mobile shell gives one pane at a time, keeps the terminal usable with the on-screen keyboard, and exposes the same agent modes and approvals as the desktop view.
+The layout switches at 900px. The mobile shell gives one pane at a time, keeps the terminal usable with the on-screen keyboard, and exposes the same agent modes and approvals as the desktop view. The terminal header has a labeled **PASTE** action: it reads the clipboard when the browser allows it and falls back to a manual paste sheet when the page is on an insecure origin or permission is denied.
 
 ![Integral Pro mobile editor](docs/mobile.png)
 

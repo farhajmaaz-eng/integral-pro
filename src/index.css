@@ -439,6 +439,14 @@ button:disabled {
   background: var(--surface-3);
 }
 
+.win-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: transparent;
+  color: var(--dim);
+}
+
 .win-btn.close:hover {
   color: #fff;
   background: var(--red);
@@ -451,6 +459,17 @@ button:disabled {
   font-size: 8px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.terminal-win .win-btn.text {
+  color: var(--accent);
+  border-color: var(--line-strong);
+}
+
+.terminal-win .win-btn.text:hover {
+  color: #0b0b0c;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .win-body {
@@ -1401,6 +1420,16 @@ button:disabled {
 
 .terminal-wrap .xterm-viewport {
   background: transparent !important;
+}
+
+.terminal-paste-input {
+  min-height: 96px;
+}
+
+@media (max-width: 900px) {
+  .terminal-paste-input {
+    font-size: 16px;
+  }
 }
 
 .terminal-overlay {

@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { Terminal as XTerm } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
-import { RotateCcw, Trash2, X } from 'lucide-react'
+import { ClipboardPaste, RotateCcw, Trash2, X } from 'lucide-react'
 import { getToken } from '../lib/api'
 import { terminalTheme } from '../lib/appearance'
+import { readClipboardText } from '../lib/clipboard'
 import { basename } from '../lib/format'
 import { useAppStore } from '../store'
 import { Window } from './Chrome'
+import { Modal } from './Modal'
 
 type Status = 'connecting' | 'open' | 'closed'
 
@@ -20,6 +22,9 @@ export function TerminalPanel({ visible }: { visible: boolean }) {
   const [shell, setShell] = useState('shell')
   const [cwd, setCwd] = useState('workspace')
   const [generation, setGeneration] = useState(0)
+  const [pasteOpen, setPasteOpen] = useState(false)
+  const [pasteDraft, setPasteDraft] = useState('')
+  const [pasteNote, setPasteNote] = useState('')
   const setTerminalOpen = useAppStore((state) => state.setTerminalOpen)
   const isMobile = useAppStore((state) => state.isMobile)
   const accent = useAppStore((state) => state.settings.accent)
@@ -46,6 +51,15 @@ export function TerminalPanel({ visible }: { visible: boolean }) {
     const fit = new FitAddon()
     term.loadAddon(fit)
     term.open(container)
+
+    // xterm sends Ctrl/Cmd+V as a control byte by default. Let the browser
+    // paste into the hidden textarea instead, like a normal IDE terminal.
+    term.attachCustomKeyEventHandler((event) => {
+      if (event.type !== 'keydown' || event.altKey) return true
+      if (!(event.ctrlKey || event.metaKey)) return true
+      return event.key.toLowerCase() !== 'v'
+    })
+
     termRef.current = term
     fitRef.current = fit
 
@@ -175,6 +189,33 @@ export function TerminalPanel({ visible }: { visible: boolean }) {
     setGeneration((value) => value + 1)
   }
 
+  async function pasteFromClipboard() {
+    const result = await readClipboardText()
+    if (result.ok && result.text) {
+      termRef.current?.paste(result.text)
+      termRef.current?.focus()
+      return
+    }
+    setPasteDraft('')
+    setPasteNote(
+      result.ok
+        ? 'Your clipboard is empty. Paste the text below, then insert it.'
+        : result.reason === 'unavailable'
+          ? 'This browser does not expose the clipboard here. Paste the text below, then insert it.'
+          : 'Clipboard access was blocked. Paste the text below, then insert it.',
+    )
+    setPasteOpen(true)
+  }
+
+  function insertPastedText() {
+    const text = pasteDraft
+    if (!text) return
+    setPasteOpen(false)
+    setPasteDraft('')
+    termRef.current?.paste(text)
+    window.setTimeout(() => termRef.current?.focus(), 0)
+  }
+
   return (
     <Window
       className="terminal-win"
@@ -182,6 +223,15 @@ export function TerminalPanel({ visible }: { visible: boolean }) {
       meta={status === 'open' ? `${shell} · ${cwd}` : status}
       actions={
         <>
+          <button
+            className={`win-btn${isMobile ? ' text' : ''}`}
+            title="Paste from clipboard"
+            aria-label="Paste from clipboard"
+            onClick={() => void pasteFromClipboard()}
+            disabled={status !== 'open'}
+          >
+            {isMobile ? 'PASTE' : <ClipboardPaste size={11} />}
+          </button>
           <button className="win-btn" title="Clear terminal" onClick={() => termRef.current?.clear()}>
             <Trash2 size={11} />
           </button>
@@ -210,6 +260,42 @@ export function TerminalPanel({ visible }: { visible: boolean }) {
           </div>
         ) : null}
       </div>
+
+      {pasteOpen ? (
+        <Modal
+          title="PASTE INTO TERMINAL"
+          meta={shell}
+          size="sm"
+          onClose={() => setPasteOpen(false)}
+          footer={
+            <>
+              <span style={{ fontSize: 8.5, color: 'var(--dim)', letterSpacing: '0.06em' }}>
+                SENT TO THE SHELL
+              </span>
+              <span className="spacer" />
+              <button className="btn btn-sm" onClick={() => setPasteOpen(false)}>
+                CANCEL
+              </button>
+              <button className="btn btn-sm btn-primary" onClick={insertPastedText} disabled={!pasteDraft}>
+                INSERT
+              </button>
+            </>
+          }
+        >
+          <div className="form-stack">
+            <div className="note">{pasteNote}</div>
+            <textarea
+              className="textarea terminal-paste-input"
+              autoFocus
+              value={pasteDraft}
+              onChange={(event) => setPasteDraft(event.target.value)}
+              placeholder="Long-press here and paste, then choose INSERT."
+              aria-label="Text to paste into the terminal"
+              spellCheck={false}
+            />
+          </div>
+        </Modal>
+      ) : null}
     </Window>
   )
 }
