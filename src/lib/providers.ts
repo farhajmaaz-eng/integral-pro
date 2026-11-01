@@ -60,6 +60,10 @@ export const DEFAULT_SETTINGS: Settings = {
   contextOpenFile: true,
   fontSize: 13,
   wordWrap: true,
+  accent: 'amber',
+  density: 'comfortable',
+  reducedMotion: false,
+  terminalFontSize: 12,
   sidebarWidth: 244,
   agentWidth: 392,
   terminalHeight: 232,
@@ -68,7 +72,9 @@ export const DEFAULT_SETTINGS: Settings = {
 export function isLocalProvider(provider: Provider): boolean {
   try {
     const url = new URL(provider.baseUrl)
-    return ['localhost', '127.0.0.1', '0.0.0.0', '::1'].includes(url.hostname)
+    return ['localhost', '127.0.0.1', '0.0.0.0', '::1', 'host.docker.internal', 'host.containers.internal'].includes(
+      url.hostname,
+    )
   } catch {
     return false
   }

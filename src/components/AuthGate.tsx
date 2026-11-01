@@ -19,8 +19,13 @@ export function AuthGate() {
     const ok = await loadHealth()
     setBusy(false)
     if (!ok) {
-      setToken('')
-      setError('Token rejected. Check ACCESS_TOKEN on the server.')
+      const state = useAppStore.getState()
+      if (state.connectionError) {
+        setError(state.connectionError)
+      } else {
+        setToken('')
+        setError('Token rejected. Check ACCESS_TOKEN on the server.')
+      }
     }
   }
 
@@ -32,7 +37,7 @@ export function AuthGate() {
           <span className="float-title">INTEGRAL PRO</span>
           <span className="float-meta">auth gate</span>
           <span className="win-bar-spacer" />
-          <span className="float-meta">v0.1</span>
+          <span className="float-meta">v0.2</span>
         </div>
         <div className="auth-body">
           <div className="auth-brand">
@@ -72,6 +77,56 @@ export function AuthGate() {
             SELF-HOSTED · BYOK · NO ACCOUNT
             <br />
             Unset ACCESS_TOKEN to disable this gate.
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function ConnectionError() {
+  const loadHealth = useAppStore((state) => state.loadHealth)
+  const message = useAppStore((state) => state.connectionError)
+  const [busy, setBusy] = useState(false)
+
+  async function retry() {
+    if (busy) return
+    setBusy(true)
+    await loadHealth()
+    setBusy(false)
+  }
+
+  return (
+    <div className="auth-screen">
+      <div className="auth-win">
+        <div className="float-bar">
+          <span className="win-dot" />
+          <span className="float-title">INTEGRAL PRO</span>
+          <span className="float-meta">offline</span>
+          <span className="win-bar-spacer" />
+          <span className="float-meta">v0.2</span>
+        </div>
+        <div className="auth-body">
+          <div className="auth-brand">
+            <Logo size={30} />
+            <div>
+              <div className="auth-title">SERVER UNREACHABLE</div>
+              <div className="auth-sub">no connection to the workspace</div>
+            </div>
+          </div>
+          <div className="auth-error">{message || 'The Integral server did not respond.'}</div>
+          <div className="note">
+            Start the server with <b>npm start</b> or <b>npm run dev</b>, then retry. If you changed
+            <b> PORT</b>, make sure this page is using the same port.
+          </div>
+          <button className="btn btn-primary btn-block" onClick={() => void retry()} disabled={busy}>
+            {busy ? 'RETRYING' : 'RETRY CONNECTION'}
+            <ArrowRight size={12} />
+          </button>
+          <div className="auth-sub" style={{ lineHeight: 1.8 }}>
+            SELF-HOSTED · LOOPBACK BY DEFAULT
+            <br />
+            Check the server terminal for startup errors.
           </div>
         </div>
       </div>

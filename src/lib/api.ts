@@ -34,14 +34,14 @@ export function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function fetchAuthorized(path: string, init: RequestInit = {}): Promise<Response> {
   const headers: Record<string, string> = { ...authHeaders(), ...(init.headers as Record<string, string> | undefined) }
   if (init.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json'
   let response: Response
   try {
     response = await fetch(path, { ...init, headers })
   } catch {
-    throw new ApiError(0, 'Cannot reach the Integral server')
+    throw new ApiError(0, 'Cannot reach the Integral server. Is it running?')
   }
   if (response.status === 401) {
     window.dispatchEvent(new CustomEvent('integral:unauthorized'))
@@ -55,8 +55,23 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new ApiError(response.status, message, payload)
   }
+  return response
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetchAuthorized(path, init)
   if (response.status === 204) return undefined as T
   return (await response.json()) as T
+}
+
+export type BlobDownload = { blob: Blob; filename: string; files: number }
+
+async function requestBlob(path: string): Promise<BlobDownload> {
+  const response = await fetchAuthorized(path)
+  const disposition = response.headers.get('Content-Disposition') || ''
+  const match = /filename="([^"]+)"/i.exec(disposition)
+  const files = Number(response.headers.get('X-Export-Files') || '') || 0
+  return { blob: await response.blob(), filename: match?.[1] || 'download.zip', files }
 }
 
 async function safeJson(response: Response): Promise<unknown> {
@@ -131,6 +146,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ baseUrl, apiKey }),
     }),
+
+  exportWorkspace: () => requestBlob('/api/export/workspace'),
 
   exec: (command: string, cwd = '') =>
     request<{

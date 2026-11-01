@@ -24,6 +24,7 @@ export function Palette() {
   const toggleSidebar = useAppStore((state) => state.toggleSidebar)
   const setSidebarView = useAppStore((state) => state.setSidebarView)
   const setSettingsOpen = useAppStore((state) => state.setSettingsOpen)
+  const setExportOpen = useAppStore((state) => state.setExportOpen)
   const loadIndexStatus = useAppStore((state) => state.loadIndexStatus)
   const pushToast = useAppStore((state) => state.pushToast)
   const clearChat = useAppStore((state) => state.clearChat)
@@ -126,9 +127,16 @@ export function Palette() {
         action: () => setSidebarView('git'),
       },
       {
+        id: 'export',
+        label: 'Export workspace, chat or settings',
+        hint: 'Ctrl Shift E',
+        kind: 'CMD',
+        action: () => setExportOpen(true),
+      },
+      {
         id: 'settings',
         label: 'Open settings',
-        hint: 'providers and routing',
+        hint: 'providers, routing, appearance',
         kind: 'CMD',
         action: () => setSettingsOpen(true),
       },
@@ -170,7 +178,7 @@ export function Palette() {
         },
       },
     ],
-    [activePath, clearChat, closeTab, loadIndexStatus, pushToast, running, saveAll, saveTab, setFileDialog, setSettingsOpen, setSidebarView, setTerminalOpen, toggleSidebar],
+    [activePath, clearChat, closeTab, loadIndexStatus, pushToast, running, saveAll, saveTab, setExportOpen, setFileDialog, setSettingsOpen, setSidebarView, setTerminalOpen, toggleSidebar],
   )
 
   const items = useMemo<PaletteItem[]>(() => {

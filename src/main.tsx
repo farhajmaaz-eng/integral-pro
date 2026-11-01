@@ -6,8 +6,14 @@ import '@fontsource/ibm-plex-mono/600.css'
 import '@fontsource/ibm-plex-sans/400.css'
 import '@fontsource/ibm-plex-sans/500.css'
 import './index.css'
-import './lib/monaco'
+import { setMonacoAccent } from './lib/monaco'
+import { applyAppearance } from './lib/appearance'
+import { useAppStore } from './store'
 import { App } from './App'
+
+const initialSettings = useAppStore.getState().settings
+applyAppearance(initialSettings)
+setMonacoAccent(initialSettings.accent)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

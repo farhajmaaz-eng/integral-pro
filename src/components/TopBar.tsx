@@ -2,6 +2,7 @@ import {
   Code2,
   Cpu,
   Database,
+  Download,
   GitBranch,
   PanelLeft,
   Save,
@@ -9,7 +10,8 @@ import {
   Terminal,
 } from 'lucide-react'
 import { useAppStore, effectiveModel } from '../store'
-import { basename, formatClock } from '../lib/format'
+import { basename } from '../lib/format'
+import { useClock } from '../lib/hooks'
 import { modelShort } from '../lib/providers'
 import { Logo } from './Chrome'
 
@@ -25,11 +27,11 @@ export function TopBar() {
   const terminalOpen = useAppStore((state) => state.terminalOpen)
   const sidebarCollapsed = useAppStore((state) => state.sidebarCollapsed)
   const isMobile = useAppStore((state) => state.isMobile)
-  const running = useAppStore((state) => state.running)
   const saveTab = useAppStore((state) => state.saveTab)
   const toggleSidebar = useAppStore((state) => state.toggleSidebar)
   const setTerminalOpen = useAppStore((state) => state.setTerminalOpen)
   const setSettingsOpen = useAppStore((state) => state.setSettingsOpen)
+  const setExportOpen = useAppStore((state) => state.setExportOpen)
   const setSidebarView = useAppStore((state) => state.setSidebarView)
   const setMobileTab = useAppStore((state) => state.setMobileTab)
 
@@ -38,7 +40,7 @@ export function TopBar() {
   const branch = git?.isRepo ? git.branch : null
   const indexed = indexStatus?.indexed ?? health?.index.indexed ?? 0
   const projectName = health?.workspace.name || 'workspace'
-  const clock = formatClock()
+  const clock = useClock()
 
   return (
     <header className="topbar">
@@ -120,10 +122,14 @@ export function TopBar() {
         <Code2 size={14} />
       </a>
       <button
-        className={`icon-btn ${running ? 'is-active' : ''}`}
-        title="Settings"
-        onClick={() => setSettingsOpen(true)}
+        className="icon-btn"
+        title="Export workspace, chat or settings (Ctrl+Shift+E)"
+        aria-label="Export"
+        onClick={() => setExportOpen(true)}
       >
+        <Download size={14} />
+      </button>
+      <button className="icon-btn" title="Settings" onClick={() => setSettingsOpen(true)}>
         <Settings size={14} />
       </button>
     </header>

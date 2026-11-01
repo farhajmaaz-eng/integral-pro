@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { formatClock } from './format'
 
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => {
@@ -23,5 +24,5 @@ export function useClock(): string {
     const timer = window.setInterval(() => setTime(new Date()), 20000)
     return () => window.clearInterval(timer)
   }, [])
-  return `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`
+  return formatClock(time)
 }

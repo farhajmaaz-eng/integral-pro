@@ -16,6 +16,7 @@ fs.writeFileSync(path.join(workspace, 'src', 'app.ts'), 'export const ok = true\
 fs.writeFileSync(path.join(workspace, 'node_modules', 'left-pad', 'index.js'), 'module.exports = 1\n')
 fs.writeFileSync(path.join(outside, 'secret.txt'), 'do not read me\n')
 fs.symlinkSync(outside, path.join(workspace, 'escape'))
+fs.symlinkSync(path.join(outside, 'missing.txt'), path.join(workspace, 'dangling'))
 
 process.env.WORKSPACE_DIR = workspace
 process.env.DATA_DIR = path.join(sandbox, 'data')
@@ -30,6 +31,7 @@ after(() => {
 test('resolvePath keeps normal workspace paths inside the root', () => {
   assert.equal(paths.resolvePath('src/app.ts'), path.join(workspace, 'src', 'app.ts'))
   assert.equal(paths.resolvePath('./README.md'), path.join(workspace, 'README.md'))
+  assert.equal(paths.resolvePath('..notes.md'), path.join(workspace, '..notes.md'))
   assert.equal(paths.resolvePath(''), workspace)
 })
 
@@ -43,9 +45,11 @@ test('resolvePath rejects parent-directory traversal', () => {
   assert.throws(() => paths.resolvePath('..'), /escapes the workspace/)
 })
 
-test('resolvePath rejects symlinks that point outside the workspace', () => {
-  assert.throws(() => paths.resolvePath('escape/secret.txt'), /symlink/)
-  assert.throws(() => paths.resolvePath('escape'), /symlink/)
+test('resolvePath rejects symlinks, including dangling links', () => {
+  assert.throws(() => paths.resolvePath('escape/secret.txt'), /Symlinks are not allowed/)
+  assert.throws(() => paths.resolvePath('escape'), /Symlinks are not allowed/)
+  assert.throws(() => paths.resolvePath('dangling'), /Symlinks are not allowed/)
+  assert.throws(() => paths.resolvePath('dangling/child.txt'), /Symlinks are not allowed/)
 })
 
 test('assertNotIgnored blocks generated and VCS directories at any depth', () => {
@@ -68,6 +72,8 @@ test('isTextFile recognizes common source files and dotfiles', () => {
   assert.equal(config.isTextFile('Dockerfile'), true)
   assert.equal(config.isTextFile('Makefile'), true)
   assert.equal(config.isTextFile('.env.local'), true)
+  assert.equal(config.isTextFile('.gitignore'), true)
+  assert.equal(config.isTextFile('LICENSE'), true)
   assert.equal(config.isTextFile('photo.png'), false)
   assert.equal(config.isTextFile('archive.zip'), false)
 })

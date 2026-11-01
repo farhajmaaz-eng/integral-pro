@@ -56,6 +56,9 @@ export type Provider = {
 
 export type RouteKind = 'chat' | 'agent' | 'plan' | 'debug' | 'docs'
 
+export type AccentId = 'amber' | 'moss' | 'rust' | 'ice' | 'bone'
+export type Density = 'comfortable' | 'compact'
+
 export type ModelRoute = { providerId: string; model: string } | null
 
 export type Settings = {
@@ -69,6 +72,10 @@ export type Settings = {
   contextOpenFile: boolean
   fontSize: number
   wordWrap: boolean
+  accent: AccentId
+  density: Density
+  reducedMotion: boolean
+  terminalFontSize: number
   sidebarWidth: number
   agentWidth: number
   terminalHeight: number

@@ -9,9 +9,12 @@ export const WORKSPACE = path.resolve(
 )
 export const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(ROOT, 'data'))
 export const PORT = Number(process.env.PORT || 8787)
+// Loopback by default. Containers set HOST=0.0.0.0 internally but should
+// publish only to the host loopback interface (see docker-compose.yml).
+export const HOST = (process.env.HOST || '127.0.0.1').trim() || '127.0.0.1'
 export const ACCESS_TOKEN = (process.env.ACCESS_TOKEN || '').trim()
 export const MAX_FILE_BYTES = 2 * 1024 * 1024
-export const VERSION = '0.1.0'
+export const VERSION = '0.2.0'
 
 export const IGNORED_DIRS = new Set([
   'node_modules',
@@ -116,6 +119,7 @@ try {
 export function isTextFile(filePath: string): boolean {
   const base = path.basename(filePath).toLowerCase()
   if (base === 'dockerfile' || base === 'makefile' || base.startsWith('.env')) return true
+  if (base.startsWith('.') || !path.extname(base)) return true
   const ext = path.extname(filePath).slice(1).toLowerCase()
   return TEXT_EXTENSIONS.has(ext)
 }

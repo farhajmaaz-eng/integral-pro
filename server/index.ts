@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
 import express from 'express'
-import { ACCESS_TOKEN, PORT, ROOT, VERSION, WORKSPACE } from './config.js'
+import { ACCESS_TOKEN, HOST, PORT, ROOT, VERSION, WORKSPACE } from './config.js'
 import { isAuthorized, requireAuth } from './auth.js'
 import { errorHandler } from './http.js'
 import { filesRouter } from './files.js'
@@ -10,6 +10,7 @@ import { gitRouter } from './git.js'
 import { indexRouter, indexStatus } from './indexer.js'
 import { aiRouter } from './ai.js'
 import { execRouter } from './exec.js'
+import { exportRouter } from './export.js'
 import { attachTerminal } from './terminal.js'
 
 const app = express()
@@ -42,6 +43,7 @@ app.use('/api/files', filesRouter)
 app.use('/api/git', gitRouter)
 app.use('/api/index', indexRouter)
 app.use('/api/ai', aiRouter)
+app.use('/api/export', exportRouter)
 app.use('/api', execRouter)
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'API route not found' })
@@ -81,13 +83,17 @@ app.use(errorHandler)
 const server = http.createServer(app)
 attachTerminal(server)
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, HOST, () => {
   console.log('')
   console.log('   ∫  INTEGRAL PRO')
   console.log(`      version    ${VERSION}`)
   console.log(`      workspace  ${WORKSPACE}`)
+  console.log(`      bind       ${HOST}:${PORT}`)
   console.log(`      api        http://localhost:${PORT}/api`)
   console.log(`      auth       ${ACCESS_TOKEN ? 'access token required' : 'open (no ACCESS_TOKEN set)'}`)
+  if (HOST !== '127.0.0.1' && HOST !== 'localhost' && HOST !== '::1') {
+    console.log('      warning    listening beyond loopback; set ACCESS_TOKEN before exposing this')
+  }
   console.log('')
 })
 

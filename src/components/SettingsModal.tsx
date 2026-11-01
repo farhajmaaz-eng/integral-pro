@@ -4,12 +4,16 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  Palette,
   Plus,
   RefreshCw,
+  RotateCcw,
   Trash2,
 } from 'lucide-react'
 import { api } from '../lib/api'
+import { ACCENTS } from '../lib/appearance'
 import {
+  DEFAULT_SETTINGS,
   PROVIDER_PRESETS,
   isLocalProvider,
   newProviderFromPreset,
@@ -21,7 +25,7 @@ import { useAppStore } from '../store'
 import type { Provider, RouteKind } from '../lib/types'
 import { Modal } from './Modal'
 
-type Section = 'providers' | 'routing' | 'agent' | 'about'
+type Section = 'providers' | 'routing' | 'agent' | 'appearance' | 'about'
 
 const ROUTES: Array<{ kind: RouteKind; label: string; note: string }> = [
   { kind: 'chat', label: 'CHAT', note: 'Conversation, explanations, questions' },
@@ -141,6 +145,18 @@ export function SettingsModal() {
     updateProvider(draft.id, { models })
   }
 
+  function resetAppearance() {
+    updateSettings({
+      accent: DEFAULT_SETTINGS.accent,
+      density: DEFAULT_SETTINGS.density,
+      reducedMotion: DEFAULT_SETTINGS.reducedMotion,
+      fontSize: DEFAULT_SETTINGS.fontSize,
+      wordWrap: DEFAULT_SETTINGS.wordWrap,
+      terminalFontSize: DEFAULT_SETTINGS.terminalFontSize,
+    })
+    pushToast('appearance reset', 'success')
+  }
+
   return (
     <Modal
       title="SETTINGS"
@@ -150,7 +166,7 @@ export function SettingsModal() {
       footer={
         <>
           <span style={{ fontSize: 8.5, color: 'var(--dim)', letterSpacing: '0.06em' }}>
-            SAVED LOCALLY · KEYS NEVER TOUCH THE SERVER
+            SAVED IN THIS BROWSER · KEYS ARE PROXIED PER REQUEST
           </span>
           <span className="spacer" />
           <button className="btn btn-primary" onClick={() => setOpen(false)}>
@@ -169,6 +185,9 @@ export function SettingsModal() {
           </button>
           <button className={section === 'agent' ? 'active' : ''} onClick={() => setSection('agent')}>
             <Check size={12} /> AGENT
+          </button>
+          <button className={section === 'appearance' ? 'active' : ''} onClick={() => setSection('appearance')}>
+            <Palette size={12} /> APPEARANCE
           </button>
           <button className={section === 'about' ? 'active' : ''} onClick={() => setSection('about')}>
             <span style={{ width: 12, textAlign: 'center' }}>∫</span> ABOUT
@@ -433,7 +452,86 @@ export function SettingsModal() {
                   </span>
                 </label>
 
-                <div className="form-grid" style={{ marginTop: 4 }}>
+                <div className="note danger">
+                  <b>PERMISSIONS.</b> The server can read and write every file in the configured workspace and
+                  spawn a shell. Do not expose an unprotected instance to the public internet. Set
+                  <b> ACCESS_TOKEN</b> if the host is reachable by others.
+                </div>
+              </div>
+            </>
+          ) : null}
+
+          {section === 'appearance' ? (
+            <>
+              <div className="pane-head">
+                <h2>APPEARANCE</h2>
+                <p>
+                  Adjust the tiled shell without leaving the charcoal base. Everything here is stored in this
+                  browser.
+                </p>
+              </div>
+
+              <div className="form-stack">
+                <div className="field">
+                  <label>ACCENT</label>
+                  <div className="accent-grid">
+                    {ACCENTS.map((preset) => {
+                      const active = settings.accent === preset.id
+                      return (
+                        <button
+                          key={preset.id}
+                          className={`accent-swatch ${active ? 'active' : ''}`}
+                          onClick={() => updateSettings({ accent: preset.id })}
+                          aria-pressed={active}
+                        >
+                          <span className="swatch" style={{ background: preset.accent }} />
+                          <span>{preset.label}</span>
+                          {active ? <Check size={10} /> : null}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <span className="hint">
+                    Applies to chrome, selection, terminal cursor and syntax keywords. The rest of the palette
+                    stays fixed.
+                  </span>
+                </div>
+
+                <div className="form-grid">
+                  <div className="field">
+                    <label>DENSITY</label>
+                    <div className="segmented" role="group" aria-label="Interface density">
+                      {(['comfortable', 'compact'] as const).map((density) => (
+                        <button
+                          key={density}
+                          className={settings.density === density ? 'active' : ''}
+                          onClick={() => updateSettings({ density })}
+                          aria-pressed={settings.density === density}
+                        >
+                          {density.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="hint">Compact tightens gaps, window bars and the status strip.</span>
+                  </div>
+
+                  <div className="field">
+                    <label>MOTION</label>
+                    <label className="check" style={{ paddingTop: 5 }}>
+                      <input
+                        type="checkbox"
+                        checked={settings.reducedMotion}
+                        onChange={(event) => updateSettings({ reducedMotion: event.target.checked })}
+                      />
+                      <span>
+                        REDUCE MOTION
+                        <span className="check-sub">Stop blinking, spinning and transition animations.</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="form-grid">
                   <div className="field">
                     <label htmlFor="editor-font">EDITOR FONT SIZE</label>
                     <input
@@ -447,21 +545,66 @@ export function SettingsModal() {
                         updateSettings({ fontSize: Math.max(10, Math.min(22, Number(event.target.value) || 13)) })
                       }
                     />
+                    <span className="hint">10–22 px. Mobile uses one pixel less.</span>
                   </div>
-                  <label className="check" style={{ alignSelf: 'end', paddingBottom: 4 }}>
+                  <div className="field">
+                    <label htmlFor="terminal-font">TERMINAL FONT SIZE</label>
                     <input
-                      type="checkbox"
-                      checked={settings.wordWrap}
-                      onChange={(event) => updateSettings({ wordWrap: event.target.checked })}
+                      id="terminal-font"
+                      className="input"
+                      type="number"
+                      min={10}
+                      max={18}
+                      value={settings.terminalFontSize}
+                      onChange={(event) =>
+                        updateSettings({
+                          terminalFontSize: Math.max(10, Math.min(18, Number(event.target.value) || 12)),
+                        })
+                      }
                     />
-                    <span>WORD WRAP</span>
-                  </label>
+                    <span className="hint">10–18 px. The PTY resizes after the font changes.</span>
+                  </div>
                 </div>
 
-                <div className="note danger">
-                  <b>PERMISSIONS.</b> The server can read and write every file in the configured workspace and
-                  spawn a shell. Do not expose an unprotected instance to the public internet. Set
-                  <b> ACCESS_TOKEN</b> if the host is reachable by others.
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={settings.wordWrap}
+                    onChange={(event) => updateSettings({ wordWrap: event.target.checked })}
+                  />
+                  <span>
+                    WORD WRAP
+                    <span className="check-sub">Wrap long lines in the editor instead of scrolling sideways.</span>
+                  </span>
+                </label>
+
+                <div className="appearance-preview" aria-hidden="true">
+                  <div className="appearance-preview-bar">
+                    <span className="win-dot" />
+                    PREVIEW
+                    <span className="win-bar-spacer" />
+                    {settings.density.toUpperCase()}
+                  </div>
+                  <div className="appearance-preview-code">
+                    <div>
+                      <span className="pv-keyword">const</span> <span className="pv-name">integral</span> ={' '}
+                      <span className="pv-string">'local-first'</span>
+                    </div>
+                    <div>
+                      <span className="pv-comment">// accent · density · motion · font size</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <button className="btn btn-sm" onClick={resetAppearance}>
+                    <RotateCcw size={10} /> RESET APPEARANCE
+                  </button>
+                </div>
+
+                <div className="note">
+                  <b>LOCAL ONLY.</b> Appearance settings are saved in localStorage and never sent to the
+                  server. Export them from the EXPORT window if you want a portable copy.
                 </div>
               </div>
             </>
@@ -471,7 +614,7 @@ export function SettingsModal() {
             <>
               <div className="pane-head">
                 <h2>INTEGRAL PRO</h2>
-                <p>Version {health?.version || '0.1.0'} · self-hosted browser IDE · BYOK.</p>
+                <p>Version {health?.version || '0.2.0'} · self-hosted browser IDE · BYOK.</p>
               </div>
               <div className="form-stack">
                 <div className="note">
@@ -496,6 +639,7 @@ export function SettingsModal() {
                     <b>CTRL SHIFT S</b><span>save all</span>
                     <b>CTRL J</b><span>toggle terminal</span>
                     <b>CTRL B</b><span>toggle sidebar</span>
+                    <b>CTRL SHIFT E</b><span>export workspace, chat or settings</span>
                   </div>
                 </div>
                 <div className="field">

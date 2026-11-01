@@ -4,6 +4,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 import { RotateCcw, Trash2, X } from 'lucide-react'
 import { getToken } from '../lib/api'
+import { terminalTheme } from '../lib/appearance'
 import { basename } from '../lib/format'
 import { useAppStore } from '../store'
 import { Window } from './Chrome'
@@ -21,44 +22,26 @@ export function TerminalPanel({ visible }: { visible: boolean }) {
   const [generation, setGeneration] = useState(0)
   const setTerminalOpen = useAppStore((state) => state.setTerminalOpen)
   const isMobile = useAppStore((state) => state.isMobile)
+  const accent = useAppStore((state) => state.settings.accent)
+  const terminalFontSize = useAppStore((state) => state.settings.terminalFontSize)
+  const reducedMotion = useAppStore((state) => state.settings.reducedMotion)
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
+    const initial = useAppStore.getState().settings
     const term = new XTerm({
       fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-      fontSize: 12,
+      fontSize: initial.terminalFontSize,
       lineHeight: 1.25,
-      cursorBlink: true,
+      cursorBlink: !initial.reducedMotion,
       cursorStyle: 'block',
       scrollback: 5000,
       convertEol: false,
       allowTransparency: true,
       macOptionIsMeta: true,
-      theme: {
-        background: '#121214',
-        foreground: '#e7e3d9',
-        cursor: '#e8b15a',
-        cursorAccent: '#121214',
-        selectionBackground: '#e8b15a33',
-        black: '#1c1c20',
-        red: '#d96c5f',
-        green: '#8fb573',
-        yellow: '#e8b15a',
-        blue: '#7fa6c9',
-        magenta: '#b07aa1',
-        cyan: '#7fb3a8',
-        white: '#e7e3d9',
-        brightBlack: '#5f5d58',
-        brightRed: '#e88577',
-        brightGreen: '#a6c98c',
-        brightYellow: '#f0c47a',
-        brightBlue: '#9bbbd8',
-        brightMagenta: '#c795b8',
-        brightCyan: '#9bcbc0',
-        brightWhite: '#ffffff',
-      },
+      theme: terminalTheme(initial.accent),
     })
     const fit = new FitAddon()
     term.loadAddon(fit)
@@ -149,6 +132,26 @@ export function TerminalPanel({ visible }: { visible: boolean }) {
       wsRef.current = null
     }
   }, [generation])
+
+  useEffect(() => {
+    const term = termRef.current
+    if (!term) return
+    term.options.theme = terminalTheme(accent)
+    term.options.fontSize = terminalFontSize
+    term.options.cursorBlink = !reducedMotion
+    const timer = window.setTimeout(() => {
+      try {
+        fitRef.current?.fit()
+        const ws = wsRef.current
+        if (ws?.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }))
+        }
+      } catch {
+        /* hidden or zero size */
+      }
+    }, 30)
+    return () => window.clearTimeout(timer)
+  }, [accent, terminalFontSize, reducedMotion])
 
   useEffect(() => {
     if (!visible) return

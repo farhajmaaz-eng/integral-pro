@@ -3,11 +3,14 @@ services:
     build: .
     container_name: integral-pro
     ports:
-      - "8787:8787"
+      # Publish to the host loopback only. Remove 127.0.0.1 at your own risk.
+      - "127.0.0.1:8787:8787"
     environment:
       # Set a strong value before exposing this to a network you do not control.
       ACCESS_TOKEN: ${ACCESS_TOKEN:-}
       PORT: 8787
+      # Required inside the container so the published port can reach it.
+      HOST: 0.0.0.0
     volumes:
       - integral-data:/app/data
     restart: unless-stopped

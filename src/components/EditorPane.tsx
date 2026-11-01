@@ -147,7 +147,7 @@ export function EditorPane() {
                 automaticLayout: true,
                 padding: { top: 10, bottom: 10 },
                 renderLineHighlight: 'all',
-                cursorBlinking: 'blink',
+                cursorBlinking: settings.reducedMotion ? 'solid' : 'blink',
                 smoothScrolling: false,
                 fontLigatures: false,
                 tabSize: 2,

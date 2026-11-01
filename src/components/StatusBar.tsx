@@ -49,7 +49,7 @@ export function StatusBar() {
         <span className={`status-dot ${connected ? '' : 'off'}`} />
         {connected ? 'LIVE' : 'OFFLINE'}
       </div>
-      <div className="status-item right">∫ v{health?.version || '0.1.0'}</div>
+      <div className="status-item right">∫ v{health?.version || '0.2.0'}</div>
     </footer>
   )
 }

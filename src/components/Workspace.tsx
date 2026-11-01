@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { useAppStore } from '../store'
 import { Window } from './Chrome'
@@ -25,6 +25,10 @@ function DesktopWorkspace() {
   const [agentWidth, setAgentWidth] = useState(settings.agentWidth)
   const [terminalHeight, setTerminalHeight] = useState(settings.terminalHeight)
   const dragRef = useRef<{ kind: DragKind; startX: number; startY: number; start: number; last: number } | null>(null)
+
+  useEffect(() => setSidebarWidth(settings.sidebarWidth), [settings.sidebarWidth])
+  useEffect(() => setAgentWidth(settings.agentWidth), [settings.agentWidth])
+  useEffect(() => setTerminalHeight(settings.terminalHeight), [settings.terminalHeight])
 
   function startDrag(kind: DragKind, event: React.PointerEvent) {
     event.preventDefault()

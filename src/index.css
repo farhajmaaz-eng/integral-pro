@@ -56,8 +56,14 @@ body {
 }
 
 ::selection {
-  background: rgba(232, 177, 90, 0.28);
+  background: var(--accent-soft);
   color: #fff;
+}
+
+@supports (background: color-mix(in srgb, red 30%, transparent)) {
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+  }
 }
 
 button,
@@ -2165,6 +2171,224 @@ button:disabled {
   text-transform: uppercase;
 }
 
+/* ----------------------------------------------------------- appearance */
+
+.accent-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.accent-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+
+.accent-swatch:hover {
+  border-color: var(--line-strong);
+  color: var(--paper);
+}
+
+.accent-swatch.active {
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+  color: var(--paper);
+}
+
+.accent-swatch .swatch {
+  width: 10px;
+  height: 10px;
+  border: 1px solid #000;
+  box-shadow: 1px 1px 0 #000;
+  flex: none;
+}
+
+.accent-swatch svg {
+  color: var(--accent);
+}
+
+.segmented {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid var(--line-strong);
+  background: #0e0e10;
+}
+
+.segmented button {
+  height: 27px;
+  padding: 0 10px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--dim);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+
+.segmented button:last-child {
+  border-right: 0;
+}
+
+.segmented button:hover {
+  background: var(--surface-2);
+  color: var(--paper);
+}
+
+.segmented button.active {
+  background: var(--accent);
+  color: #0b0b0c;
+}
+
+.appearance-preview {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.appearance-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 7px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--dim);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+
+.appearance-preview-code {
+  padding: 9px 10px;
+  font-size: 10.5px;
+  line-height: 1.7;
+  color: var(--paper);
+}
+
+.pv-keyword {
+  color: var(--accent);
+}
+
+.pv-name {
+  color: #d8d3c7;
+}
+
+.pv-string {
+  color: var(--green);
+}
+
+.pv-comment {
+  color: var(--dim);
+  font-style: italic;
+}
+
+/* --------------------------------------------------------------- export */
+
+.export-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+}
+
+.export-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.export-row:last-child {
+  border-bottom: 0;
+}
+
+.export-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--accent);
+  flex: none;
+}
+
+.export-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.export-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--paper);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.export-desc {
+  margin-top: 2px;
+  color: var(--dim);
+  font-size: 8.5px;
+  line-height: 1.55;
+}
+
+.export-desc b {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.export-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+.export-badge {
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  padding: 1px 4px;
+}
+
+.hidden-input {
+  display: none;
+}
+
+/* ------------------------------------------------- density and motion */
+
+:root[data-density='compact'] {
+  --gap: 3px;
+  --winbar: 25px;
+  --statusbar: 20px;
+}
+
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-motion='reduced'] .blink-square {
+  animation: none !important;
+  opacity: 1;
+}
+
 .note {
   border-left: 2px solid var(--accent-dim);
   background: var(--surface-2);
@@ -3010,5 +3234,21 @@ button:disabled {
 
   .mobile-panel > .win {
     border-color: var(--line-strong);
+  }
+}
+
+@media (max-width: 620px) {
+  .export-row {
+    flex-wrap: wrap;
+  }
+
+  .export-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .accent-swatch {
+    flex: 1;
+    justify-content: center;
   }
 }

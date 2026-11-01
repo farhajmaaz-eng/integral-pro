@@ -23,8 +23,11 @@ It is also deliberately not another rounded-corner AI product. The interface is 
 - **Project-wide search** backed by SQLite FTS5. The index warms itself on boot and can be rebuilt from the UI.
 - **Real terminal** over WebSocket, backed by a PTY, with resize and reconnect handling.
 - **Git panel** for branch status, the change list, file diffs, commits and history. Works with any repository the server user can access.
+- **Exports**: workspace ZIP, conversation Markdown, current-file download, and a settings JSON export/import flow that never includes API keys.
+- **Appearance controls**: five accent presets, compact density, reduced motion, editor and terminal font sizes, and word wrap. The charcoal base stays fixed.
 - **Mobile support**: below 900px the workspace becomes a single-pane layout with a bottom navigation bar. The PWA manifest makes it installable on a phone.
 - **Self-hosted and small**: one Node process, one SQLite file, static frontend. Docker image included.
+- **Loopback by default**: the server and Vite bind to `127.0.0.1`, and Docker publishes only to host loopback. Nothing is exposed beyond the machine unless you explicitly change it.
 - **Optional access token** for shared or network-exposed instances.
 
 ## Modes
@@ -55,7 +58,7 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:5173>. The API and terminal server run on port 8787; Vite proxies both.
+Open <http://localhost:5173>. The API and terminal server run on port 8787; Vite proxies both. Both processes bind to `127.0.0.1` by default.
 
 On first boot, Integral Pro creates `data/workspace`, copies the small demo project from `example-project/`, initializes git, and makes an initial commit. You get a real project to open instead of an empty editor.
 
@@ -66,7 +69,7 @@ npm run build
 ACCESS_TOKEN="$(openssl rand -hex 24)" npm start
 ```
 
-Open <http://localhost:8787>. The server serves `dist/` and the API from the same origin.
+Open <http://localhost:8787>. The server serves `dist/` and the API from the same origin. It listens on `127.0.0.1` unless `HOST` is set.
 
 ### Docker
 
@@ -76,13 +79,14 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open <http://localhost:8787>. Workspace data, the SQLite index and the demo project live in the `integral-data` volume.
+Open <http://localhost:8787>. Workspace data, the SQLite index and the demo project live in the `integral-data` volume. Compose publishes the port to `127.0.0.1` on the host; the container itself listens on `0.0.0.0` so Docker can reach it.
 
 To work on a project on the host instead:
 
 ```bash
 docker build -t integral-pro .
-docker run --rm -p 8787:8787 \
+docker run --rm -p 127.0.0.1:8787:8787 \
+  -e HOST=0.0.0.0 \
   -e ACCESS_TOKEN="$(openssl rand -hex 24)" \
   -e WORKSPACE_DIR=/workspace \
   -v "$PWD/my-project:/workspace" \
@@ -100,7 +104,7 @@ Set `WORKSPACE_DIR` to an absolute path:
 WORKSPACE_DIR=/home/me/code/my-project npm start
 ```
 
-When `WORKSPACE_DIR` is set, Integral Pro does not copy the demo project and does not create a git repository or commit in your project. The terminal starts in that directory. Everything the agent and editor touch is confined to it.
+When `WORKSPACE_DIR` is set, Integral Pro does not copy the demo project and does not create a git repository or commit in your project. The terminal starts in that directory. Everything the agent and editor touch is confined to it. The server still binds to loopback by default; use `HOST` only when you intentionally put a reverse proxy in front of it.
 
 ## Configure a model
 
@@ -114,15 +118,28 @@ Provider presets include OpenRouter, OpenAI, Groq, Ollama and LM Studio. Local p
 
 API keys are stored in the browser's `localStorage` and sent with each request to your own server. The server forwards them to the provider and does not write them to disk, the SQLite database or logs. Clearing site data removes them.
 
+## Export and customize
+
+Open the download icon in the top bar, the **EXPORT** command in `Ctrl/Cmd + K`, or press `Ctrl/Cmd + Shift + E`.
+
+- **Workspace archive** streams a ZIP of the workspace. `node_modules`, `.git`, build output, symlinks, `.env*` files (except `.env.example`) and known credential files such as `.npmrc`, `.netrc`, `.git-credentials` and `.pgpass` are skipped. The server caps exports at 5,000 files and 200 MB.
+- **Conversation** writes the current transcript as Markdown, including tool calls, results and reasoning.
+- **Settings** writes a portable JSON bundle without API keys. Importing validates providers and routes, clamps font sizes and keeps an existing browser key only when that provider's endpoint is unchanged. A file cannot redirect a saved key to a different host.
+- **Current file** downloads the active buffer, including unsaved changes.
+
+Appearance lives under **Settings → APPEARANCE**: amber, moss, rust, ice or bone accents; comfortable or compact density; reduced motion; editor and terminal font sizes; and word wrap. Settings are stored in the browser and applied before the first render.
+
 ## Security model
 
 Integral Pro is a development tool with real filesystem and shell access. Treat it like an SSH session, not a public website.
 
+- **It is loopback-only by default.** The production server and Vite bind to `127.0.0.1`; Docker Compose publishes to `127.0.0.1` on the host. Changing `HOST` or removing the loopback prefix is an explicit decision to expose it.
 - **Set `ACCESS_TOKEN` on any reachable host.** Without it, the API and terminal are open to anyone who can reach the port. The token is a single shared secret, not a multi-user account system.
 - **Use TLS and a reverse proxy** if the instance is not on localhost or a private VPN. The built-in server speaks plain HTTP.
 - **The terminal is a real shell** running as the server user. It is not a sandbox. The same is true for agent commands, which require approval by default but can be auto-approved in settings.
 - **The AI proxy is an authenticated HTTP(S) proxy.** A logged-in client can ask the server to call an arbitrary provider base URL. Restrict outbound network access if that matters for your deployment.
-- **File access is confined to the workspace.** Paths are resolved and checked against the workspace root, including symlink escapes. Generated and VCS directories are ignored. File reads are capped at 2 MB.
+- **File access is confined to the workspace.** Paths are resolved and checked against the workspace root. Every symlink component is rejected, including dangling links, so a write cannot be redirected outside the workspace. Generated and VCS directories are ignored. File reads are capped at 2 MB.
+- **Exports skip sensitive files.** Workspace ZIPs omit symlinks, ignored directories, `.env*` files (except `.env.example`) and known credential files. Settings exports never contain API keys, and imports cannot redirect a saved key to a new endpoint.
 - **Agent writes and commands are opt-in per action by default.** The diff/command approval modal can be bypassed by enabling auto-apply in Settings, so leave it off on untrusted projects.
 - **Run it in a container or VM** if you are pointing it at code you do not fully trust.
 
@@ -138,6 +155,7 @@ This project has not been security-audited. Review the server code before exposi
 | `Ctrl/Cmd + K` | Command palette |
 | `Ctrl/Cmd + J` | Toggle terminal |
 | `Ctrl/Cmd + B` | Toggle sidebar |
+| `Ctrl/Cmd + Shift + E` | Export workspace, chat or settings |
 | `Ctrl/Cmd + Enter` | Commit in the git panel |
 | `Enter` | Send chat message |
 | `Shift + Enter` | New line in chat |
@@ -175,8 +193,10 @@ The AI endpoint is a streaming pass-through. It accepts an OpenAI-compatible req
 
 ```text
 src/
-  components/        tiled UI, editor, chat, terminal, git, modals
+  components/        tiled UI, editor, chat, terminal, git, export, modals
   lib/agent.ts       agent loop, tool definitions, mode permissions
+  lib/appearance.ts  accent presets, density, motion, terminal theme
+  lib/export.ts      markdown, settings and download helpers
   lib/stream.ts      SSE parser and streaming client
   lib/providers.ts   presets, routing, provider helpers
   store.ts           Zustand state and persisted settings
@@ -184,13 +204,14 @@ server/
   index.ts           HTTP server, static frontend, terminal attach
   files.ts           tree, read, write, create, rename, delete
   paths.ts           workspace confinement and symlink checks
+  export.ts          streaming workspace ZIP with sensitive-file filters
   git.ts             status, diff, commit, log
   indexer.ts         SQLite FTS5 index and search
   ai.ts              OpenAI-compatible streaming proxy
   terminal.ts        PTY over WebSocket
   auth.ts            optional bearer-token gate
 example-project/     demo workspace copied on first boot
-tests/               path-safety and SSE parser tests
+tests/               path-safety, export and SSE parser tests
 ```
 
 ## Scripts
@@ -203,7 +224,7 @@ npm run typecheck  # tsc --noEmit
 npm test           # node:test suites in tests/
 ```
 
-The test suite covers path traversal, symlink escapes, ignored directories, binary detection, text-file detection, file walking and SSE stream parsing.
+The test suite covers path traversal, symlink escapes (including dangling links), ignored directories, binary and text-file detection, file walking, workspace export filtering, settings import safety and SSE stream parsing.
 
 ## API surface
 
@@ -228,6 +249,7 @@ All routes except `/api/health` require the bearer token when `ACCESS_TOKEN` is 
 | `POST /api/exec` | Run a command (approval handled by the client) |
 | `POST /api/ai/chat` | Streaming OpenAI-compatible proxy |
 | `POST /api/ai/models` | List provider models |
+| `GET /api/export/workspace` | Streaming workspace ZIP (filtered) |
 | `WS /terminal` | PTY session |
 
 ## Limitations
@@ -237,6 +259,7 @@ All routes except `/api/health` require the bearer token when `ACCESS_TOKEN` is 
 - Monaco provides syntax highlighting and basic suggestions, not full LSP intelligence. There is no debugger.
 - One workspace and one shared token per server instance. There are no user accounts, roles or per-user isolation.
 - The terminal and exec endpoints are unsandboxed by design. Use a container or VM for untrusted code.
+- Workspace exports are capped at 5,000 files and 200 MB, and browser downloads buffer the ZIP in memory. Very large projects should be archived with `git archive` or `tar` instead.
 - No collaborative editing, extensions marketplace or remote development protocol.
 - Tool-calling quality depends entirely on the model you choose.
 

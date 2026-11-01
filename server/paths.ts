@@ -1,37 +1,39 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { HttpError } from './http.js'
-import { IGNORED_DIRS, WORKSPACE } from './config.js'
-
-const REAL_ROOT = fs.realpathSync(WORKSPACE)
+import { IGNORED_DIRS, IGNORED_FILES, WORKSPACE } from './config.js'
 
 /** Resolve a workspace-relative path and refuse anything that escapes the root. */
 export function resolvePath(relative = ''): string {
   const cleaned = String(relative || '').replace(/^[/\\]+/, '')
   const abs = path.resolve(WORKSPACE, cleaned)
   const rel = path.relative(WORKSPACE, abs)
-  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+  if (rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel)) {
     throw new HttpError(400, 'Path escapes the workspace')
   }
   assertNoSymlinkEscape(abs)
   return abs
 }
 
-/** Make sure a path (or its nearest existing parent) does not traverse a symlink outside. */
+/**
+ * Reject every symlink component, including dangling links. Following a link
+ * would let a write land outside the workspace even when its final target does
+ * not exist yet.
+ */
 function assertNoSymlinkEscape(abs: string) {
-  let probe = abs
-  for (let i = 0; i < 64; i++) {
+  const rel = path.relative(WORKSPACE, abs)
+  const parts = rel.split(path.sep).filter(Boolean)
+  let current = WORKSPACE
+  for (const part of parts) {
+    current = path.join(current, part)
+    let stat: fs.Stats
     try {
-      const real = fs.realpathSync(probe)
-      if (real !== REAL_ROOT && !real.startsWith(REAL_ROOT + path.sep)) {
-        throw new HttpError(400, 'Path escapes the workspace through a symlink')
-      }
+      stat = fs.lstatSync(current)
+    } catch {
       return
-    } catch (err) {
-      if (err instanceof HttpError) throw err
-      const parent = path.dirname(probe)
-      if (parent === probe) return
-      probe = parent
+    }
+    if (stat.isSymbolicLink()) {
+      throw new HttpError(400, 'Symlinks are not allowed inside the workspace')
     }
   }
 }
@@ -91,6 +93,7 @@ export function walkFiles(
         if (IGNORED_DIRS.has(entry.name)) continue
         visit(path.join(current, entry.name))
       } else if (entry.isFile()) {
+        if (IGNORED_FILES.has(entry.name)) continue
         try {
           const stat = fs.statSync(path.join(current, entry.name))
           if (stat.size > maxBytes) continue
